@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ob-mcp-server
+  labels:
+    app: ob-mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ob-mcp-server
+  template:
+    metadata:
+      labels:
+        app: ob-mcp-server
+    spec:
+      containers:
+      - name: ob-mcp-server
+        image: us-west1-docker.pkg.dev/<PROJECT_ID>/gke-hackathon/mcp-server:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 999
+        ports:
+        - name: http-mcp
+          containerPort: 50051
+        env:
+        - name: MCP_SERVER_HOST
+          value: "0.0.0.0"
+        - name: MCP_SERVER_PORT
+          value: "50051"
+        - name: GCP_PROJECT_ID
+          value: "zippy-entry-470104-d6"
+        resources:
+          requests:
+            cpu: "300m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "500Mi"
+        readinessProbe:
+          tcpSocket:
+            port: http-mcp
+          initialDelaySeconds: 15 # Time to wait before first probe
+          periodSeconds: 10    # How often to probe
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ob-mcp-server
+spec:
+  type: ClusterIP
+  selector:
+    app: ob-mcp-server
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: http-mcp
