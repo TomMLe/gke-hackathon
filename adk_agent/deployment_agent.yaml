@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: adk-agent
-        image: us-docker.pkg.dev/<PROJECT_ID>/llama-ray/adk-agent:latest
+        image: us-west1-docker.pkg.dev/<PROJECT_ID>/gke-hackathon/adk-agent:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -34,17 +34,9 @@ spec:
         ports:
         - containerPort: 8080
         env:
-          - name: PORT
-            value: '8080'
-          - name: GOOGLE_CLOUD_PROJECT
-            value: 'gke-ai-open-models'
-          - name: GOOGLE_CLOUD_LOCATION
-            value: 'us-central1'
-          - name: GOOGLE_GENAI_USE_VERTEXAI
-            value: 'False'
-          - name: WEATHER_MCP_SERVER_HOST
-            value: 'weather-mcp-server'
-          - name: WEATHER_SERVER_PORT
+          - name: MCP_SERVER_HOST
+            value: 'mcp-server'
+          - name: MCP_SERVER_PORT
             value: '8080'
         volumeMounts:
         - name: tmp-volume

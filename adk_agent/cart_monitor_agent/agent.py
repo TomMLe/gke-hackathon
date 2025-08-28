@@ -34,12 +34,29 @@ class CartMonitorAgent(BaseAgent):
         self.agent = None
 
     async def init_agent(self):
-        logger.info(f'Initializing {self.agent_name} metadata')
-        config = get_mcp_server_config()
-        logger.info(f'MCP Server url={config.url}')
+        # logger.info(f'Initializing {self.agent_name} metadata')
+        # config = get_mcp_server_config()
+        # logger.info(f'MCP Server url={config.url}')
+        # tools = await MCPToolset(
+        #     connection_params=SseServerParams(url=config.url)
+        # ).get_tools()
+
+        # MCP Toolset Configuration
+        mcp_host = os.getenv("MCP_SERVER_HOST", "mcp-server")
+        mcp_port = int(os.getenv("MCP_SERVER_PORT", 8080))
+        mcp_path = os.getenv("MCP_SERVER_PATH", "/sse")
+        full_mcp_sse_url = f"http://{mcp_host}:{mcp_port}{mcp_path}"
+        logger.info(f"Configuring MCPToolset URL: {full_mcp_sse_url}")
+
+        connection_params = SseServerParams(
+            url=full_mcp_sse_url,
+            headers={'Accept': 'text/event-stream'}  # Standard for SSE
+        )
+
+        logger.info(f"Attempting to get tools using MCPToolset.from_server with URL: {full_mcp_sse_url}")
         tools = await MCPToolset(
-            connection_params=SseServerParams(url=config.url)
-        ).get_tools()
+            connection_params=connection_params
+        )
 
         for tool in tools:
             logger.info(f'Loaded tools {tool.name}')
