@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
-COPY weather_agent ./weather_agent
+COPY cart_monitor_agent ./cart_monitor_agent
 
 RUN chown -R myuser:myuser /app
 USER myuser

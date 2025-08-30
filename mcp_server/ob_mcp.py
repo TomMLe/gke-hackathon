@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 MCP_SERVER_HOST = os.getenv("MCP_SERVER_HOST", "0.0.0.0")  # For Uvicorn to bind to all interfaces in the container
 MCP_SERVER_PORT = int(os.getenv("MCP_SERVER_PORT", 50051))
 
-REDIS_ADDRESS = "localhost:7070" #TODO: update cart service address
+REDIS_ADDRESS = "34.118.228.44:6379"
 
 # GCP Project
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")

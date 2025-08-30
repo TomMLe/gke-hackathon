@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: ob-mcp-server
-        image: us-west1-docker.pkg.dev/<PROJECT_ID>/gke-hackathon/mcp-server:latest
+        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/mcp-server:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
