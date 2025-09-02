@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import redis
+import time
 from google.cloud import pubsub_v1
 from mcp.server.fastmcp import FastMCP
 
@@ -35,25 +36,22 @@ logging.info(f"Online Boutique MCP server starting on {MCP_SERVER_HOST}:{MCP_SER
 # --- MCP Tools ---
 @mcp.tool()
 def monitor_carts():
-    """Monitors for abandoned carts and publishes events to Pub/Sub."""
+    """Monitors for abandoned carts and returns a list of them."""
     redis_client = redis.Redis.from_url(f'redis://{REDIS_ADDRESS}')
-    ABANDONED_THRESHOLD = 1800
+    ABANDONED_THRESHOLD = 150
+    abandoned = []
 
-    while True:
-        cursor = '0'
-        while cursor != 0:
-            cursor, keys = redis_client.scan(cursor=cursor, match='cart:*')
-            for key in keys:
-                idle_time = redis_client.object('idletime', key)    
-                if idle_time > ABANDONED_THRESHOLD:
-                    user_id = key.decode('utf-8').split(':', 1)[1]
-                    publisher = pubsub_v1.PublisherClient()
-                    topic_path = publisher.topic_path(PROJECT_ID, PUBSUB_TOPIC)
-                    data = json.dumps({'user-id': user_id, 'cart_id': key.decode('utf-8')}).encode('utf-8')
-                    future = publisher.publish(topic_path, data)
-                    logger.info(f"Published abandoned cart: {key.decode('utf-8')}")
-        
-        time.sleep(300)
+    cursor = '0'
+    while cursor != 0:
+        cursor, keys = redis_client.scan(cursor=cursor, match='cart:*')
+        for key in keys:
+            idle_time = redis_client.object('idletime', key)
+            if idle_time > ABANDONED_THRESHOLD:
+                user_id = key.decode('utf-8').split(':', 1)[1]
+                abandoned.append({'user_id': user_id, 'cart_id': key.decode('utf-8')})
+                # Publish to Pub/Sub here if desired
+
+    return {'abandoned_carts': abandoned}
 
 if __name__ == "__main__":
     logger.info("Starting Online Boutique MCP Server...")
