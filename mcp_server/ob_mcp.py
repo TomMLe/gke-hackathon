@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 MCP_SERVER_HOST = os.getenv("MCP_SERVER_HOST", "0.0.0.0")  # For Uvicorn to bind to all interfaces in the container
 MCP_SERVER_PORT = int(os.getenv("MCP_SERVER_PORT", 50051))
 
-REDIS_ADDRESS = "34.118.228.44:6379"
+REDIS_ADDRESS = "redis-cart:6379"
 
 # GCP Project
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
@@ -43,13 +43,27 @@ def monitor_carts():
 
     cursor = '0'
     while cursor != 0:
-        cursor, keys = redis_client.scan(cursor=cursor, match='cart:*')
+        cursor, keys = redis_client.scan(cursor=cursor)
         for key in keys:
-            idle_time = redis_client.object('idletime', key)
-            if idle_time > ABANDONED_THRESHOLD:
-                user_id = key.decode('utf-8').split(':', 1)[1]
-                abandoned.append({'user_id': user_id, 'cart_id': key.decode('utf-8')})
-                # Publish to Pub/Sub here if desired
+            key_str = key.decode('utf-8')
+            key_type = redis_client.type(key)
+            if key_type == b'hash':
+                idle_time = redis_client.object('idletime', key)
+                if idle_time > ABANDONED_THRESHOLD:
+                    fields = redis_client.hgetall(key)
+                    # Parse items (assuming "data" field is protobuf or JSON)
+                    # items = parse_cart_fields(fields)  # Custom function below
+                    abandoned.append({
+                        'user_id': key_str,
+                        'idle_time_seconds': idle_time,
+                        # 'items': items
+                    })
+                    # Publish to Pub/Sub
+                    publisher = pubsub_v1.PublisherClient()
+                    topic_path = publisher.topic_path(PROJECT_ID, PUBSUB_TOPIC)
+                    data = json.dumps(abandoned[-1]).encode('utf-8')
+                    publisher.publish(topic_path, data)
+                    logger.info(f"Published abandoned cart: {key_str}")
 
     return {'abandoned_carts': abandoned}
 
