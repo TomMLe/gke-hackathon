@@ -53,17 +53,18 @@ def monitor_carts():
                     fields = redis_client.hgetall(key)
                     # Parse items (assuming "data" field is protobuf or JSON)
                     # items = parse_cart_fields(fields)  # Custom function below
-                    abandoned.append({
-                        'user_id': key_str,
-                        'idle_time_seconds': idle_time,
-                        # 'items': items
-                    })
+                    entry = {'user_id': key_str, 'idle_time_seconds': idle_time}
+                    abandoned.append(entry)
                     # Publish to Pub/Sub
-                    publisher = pubsub_v1.PublisherClient()
-                    topic_path = publisher.topic_path(PROJECT_ID, PUBSUB_TOPIC)
-                    data = json.dumps(abandoned[-1]).encode('utf-8')
-                    publisher.publish(topic_path, data)
-                    logger.info(f"Published abandoned cart: {key_str}")
+                    try:
+                        publisher = pubsub_v1.PublisherClient()
+                        topic_path = publisher.topic_path(PROJECT_ID, PUBSUB_TOPIC)
+                        data = json.dumps(entry).encode('utf-8')
+                        future = publisher.publish(topic_path, data)
+                        message_id = future.result()
+                        logger.info(f"Successfully published {key_str} to Pub/Sub, message_id={message_id}")
+                    except Exception as e:
+                        logger.error(f"Pub/Sub publish failed for {key_str}: {e}")
 
     return {'abandoned_carts': abandoned}
 
