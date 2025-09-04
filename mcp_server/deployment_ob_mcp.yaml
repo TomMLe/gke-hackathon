@@ -3,7 +3,7 @@ kind: ServiceAccount
 metadata:
   name: gke-hackathon-sa
   annotations:
-    iam.gke.io/gcp-service-account: gke-hackathon-sa@$PROJECT_ID.iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: gke-hackathon-sa@zippy-entry-470104-d6.iam.gserviceaccount.com
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -21,7 +21,7 @@ spec:
       labels:
         app: ob-mcp-server
     spec:
-      serviceAccountName: gke-hacakathon-se
+      serviceAccountName: gke-hackathon-sa
       containers:
       - name: ob-mcp-server
         image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/mcp-server:latest
