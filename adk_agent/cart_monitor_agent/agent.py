@@ -30,7 +30,7 @@ class CartMonitorAgent(BaseAgent):
 
         logger.info(f'Init {self.agent_name}')
 
-        self.instructions = "You are a cart monitoring agent. Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks."
+        self.instructions = "You are a cart monitoring agent, specifically for fashion items. Only look for carts with fashion items in it. For example: shoes, sunglasses, etc. Carts have other items, but only look for carts with fashion items Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks."
         self.agent = None
 
     async def init_agent(self):
