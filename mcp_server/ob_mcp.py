@@ -5,6 +5,7 @@ import redis
 import time
 from google.cloud import pubsub_v1
 from mcp.server.fastmcp import FastMCP
+import demo_pb2 as pb
 
 
 logging.basicConfig(
@@ -52,8 +53,8 @@ def monitor_carts():
                 if idle_time > ABANDONED_THRESHOLD:
                     fields = redis_client.hgetall(key)
                     # Parse items (assuming "data" field is protobuf or JSON)
-                    # items = parse_cart_fields(fields)  # Custom function below
-                    entry = {'user_id': key_str, 'idle_time_seconds': idle_time}
+                    items = parse_cart_fields(fields)  # Custom function below
+                    entry = {'user_id': key_str, 'idle_time_seconds': idle_time, 'items': items}
                     abandoned.append(entry)
                     # Publish to Pub/Sub
                     try:
@@ -70,16 +71,21 @@ def monitor_carts():
 
 def parse_cart_fields(fields):
     items = []
-    if b'data' in fields:
-        data = fields[b'data']
+    if b'data' in fields and fields[b'data']:
         try:
-            # Assuming protobuf; replace with actual decode if needed
-            cart = Hipstershop.Cart.FromString(data)  # Requires protobuf import/setup
+            cart = pb.Cart.FromString(fields[b'data'])  # Deserializes binary to Cart object
             for item in cart.items:
-                items.append({'product_id': item.product_id, 'quantity': item.quantity})
+                items.append({
+                    'product_id': item.product_id,
+                    'quantity': item.quantity
+                })
+            logger.info(f"Parsed {len(items)} items from cart data")
         except Exception as e:
-            logger.error(f"Decode error: {e}")
-            items = [{"raw_data": data.decode('utf-8', errors='ignore')}]
+            logger.error(f"Protobuf decode error: {e}")
+            items = [{"error": "Failed to decode data", "raw": fields[b'data'].hex()}]  # Hex for debugging
+    else:
+        logger.info("No 'data' field or empty")
+        items = [{"message": "No items in cart"}]
     return items
 
 if __name__ == "__main__":
