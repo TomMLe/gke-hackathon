@@ -5,3 +5,6 @@ mcp==1.8.1
 uvicorn==0.34.3
 redis
 google-cloud-pubsub
+google-api-core==2.25.1
+grpcio-health-checking==1.74.0
+grpcio==1.74.0

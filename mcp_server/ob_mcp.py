@@ -68,6 +68,20 @@ def monitor_carts():
 
     return {'abandoned_carts': abandoned}
 
+def parse_cart_fields(fields):
+    items = []
+    if b'data' in fields:
+        data = fields[b'data']
+        try:
+            # Assuming protobuf; replace with actual decode if needed
+            cart = Hipstershop.Cart.FromString(data)  # Requires protobuf import/setup
+            for item in cart.items:
+                items.append({'product_id': item.product_id, 'quantity': item.quantity})
+        except Exception as e:
+            logger.error(f"Decode error: {e}")
+            items = [{"raw_data": data.decode('utf-8', errors='ignore')}]
+    return items
+
 if __name__ == "__main__":
     logger.info("Starting Online Boutique MCP Server...")
     try:
