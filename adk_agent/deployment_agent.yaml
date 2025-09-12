@@ -35,6 +35,12 @@ spec:
         env:
           - name: PORT
             value: '8080'
+          - name: GOOGLE_CLOUD_PROJECT
+            value: 'zippy-entry-470104-d6'
+          - name: GOOGLE_CLOUD_LOCATION
+            value: 'us-west1'
+          - name: GOOGLE_GENAI_USE_VERTEXAI
+            value: 'False'
           - name: MCP_SERVER_HOST
             value: 'mcp-server'
           - name: MCP_SERVER_PORT

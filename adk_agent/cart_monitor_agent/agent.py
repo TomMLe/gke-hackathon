@@ -5,9 +5,7 @@ import re
 from collections.abc import AsyncIterable
 from typing import Any, Dict
 
-from a2a_mcp.common.agent_runner import AgentRunner
-from a2a_mcp.common.base_agent import BaseAgent
-from a2a_mcp.common.utils import get_mcp_server_config, init_api_key
+# from common import AgentRunner, BaseAgent, init_api_key
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, SseServerParams
 from google.genai import types as genai_types
@@ -16,11 +14,11 @@ from google.genai import types as genai_types
 logger = logging.getLogger(__name__)
 
 
-class CartMonitorAgent(BaseAgent):
+class CartMonitorAgent():
     """Cart Monitor Agent backed by ADK."""
 
     def __init__(self):
-        init_api_key()
+        # init_api_key()
 
         super().__init__(
             agent_name="Cart Monitor Agent",
@@ -34,12 +32,6 @@ class CartMonitorAgent(BaseAgent):
         self.agent = None
 
     async def init_agent(self):
-        # logger.info(f'Initializing {self.agent_name} metadata')
-        # config = get_mcp_server_config()
-        # logger.info(f'MCP Server url={config.url}')
-        # tools = await MCPToolset(
-        #     connection_params=SseServerParams(url=config.url)
-        # ).get_tools()
 
         # MCP Toolset Configuration
         mcp_host = os.getenv("MCP_SERVER_HOST", "mcp-server")
@@ -72,38 +64,38 @@ class CartMonitorAgent(BaseAgent):
             generate_content_config=generate_content_config,
             tools=tools,
         )
-        self.runner = AgentRunner()
+        # self.runner = AgentRunner()
 
     async def invoke(self, query, session_id) -> dict:
         logger.info(f'Running {self.agent_name} for session {session_id}')
 
         raise NotImplementedError('Please use the streaming function')
 
-    async def stream(
-        self, query, context_id, task_id
-    ) -> AsyncIterable[Dict[str, Any]]:
-        logger.info(
-            f'Running {self.agent_name} stream for session {context_id} {task_id} - {query}'
-        )
+    # async def stream(
+    #     self, query, context_id, task_id
+    # ) -> AsyncIterable[Dict[str, Any]]:
+    #     logger.info(
+    #         f'Running {self.agent_name} stream for session {context_id} {task_id} - {query}'
+    #     )
 
-        if not query:
-            raise ValueError('Query cannot be empty')
+    #     if not query:
+    #         raise ValueError('Query cannot be empty')
 
-        if not self.agent:
-            await self.init_agent()
-        async for chunk in self.runner.run_stream(
-            self.agent, query, context_id
-        ):
-            logger.info(f'Received chunk {chunk}')
-            if isinstance(chunk, dict) and chunk.get('type') == 'final_result':
-                response = chunk['response']
-                yield self.get_agent_response(response)
-            else:
-                yield {
-                    'is_task_complete': False,
-                    'require_user_input': False,
-                    'content': f'{self.agent_name}: Processing Request...',
-                }
+    #     if not self.agent:
+    #         await self.init_agent()
+    #     async for chunk in self.runner.run_stream(
+    #         self.agent, query, context_id
+    #     ):
+    #         logger.info(f'Received chunk {chunk}')
+    #         if isinstance(chunk, dict) and chunk.get('type') == 'final_result':
+    #             response = chunk['response']
+    #             yield self.get_agent_response(response)
+    #         else:
+    #             yield {
+    #                 'is_task_complete': False,
+    #                 'require_user_input': False,
+    #                 'content': f'{self.agent_name}: Processing Request...',
+    #             }
 
     def format_response(self, chunk):
         patterns = [
