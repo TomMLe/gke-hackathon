@@ -13,146 +13,37 @@ from google.genai import types as genai_types
 
 logger = logging.getLogger(__name__)
 
+# MCP Toolset Configuration
+mcp_host = os.getenv("MCP_SERVER_HOST", "mcp-server")
+mcp_port = int(os.getenv("MCP_SERVER_PORT", 8080))
+mcp_path = os.getenv("MCP_SERVER_PATH", "/sse")
+full_mcp_sse_url = f"http://{mcp_host}:{mcp_port}{mcp_path}"
+logger.info(f"Configuring MCPToolset URL: {full_mcp_sse_url}")
 
-class CartMonitorAgent():
-    """Cart Monitor Agent backed by ADK."""
+connection_params = SseServerParams(
+    url=full_mcp_sse_url,
+    headers={'Accept': 'text/event-stream'}  # Standard for SSE
+)
 
-    def __init__(self):
-        # init_api_key()
+logger.info(f"Attempting to get tools using MCPToolset.from_server with URL: {full_mcp_sse_url}")
+tools = await MCPToolset(
+    connection_params=connection_params
+)
 
-        super().__init__(
-            agent_name="Cart Monitor Agent",
-            description="Monitors abandoned carts using MCP tools",
-            content_types=['text', 'text/plain'],
-        )
+for tool in tools:
+    logger.info(f'Loaded tools {tool.name}')
 
-        logger.info(f'Init {self.agent_name}')
+generate_content_config = genai_types.GenerateContentConfig(
+    temperature=0.0
+)
+root_agent = Agent(
+    name="Cart Monitoring Agent",
+    instruction="You are a cart monitoring agent, specifically for fashion items. Only look for carts with fashion items in it. For example: shoes, sunglasses, etc. Carts have other items, but only look for carts with fashion items Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks.",
+    model='gemini-2.0-flash',
+    disallow_transfer_to_parent=True,
+    disallow_transfer_to_peers=True,
+    generate_content_config=generate_content_config,
+    tools=tools
+)
 
-        self.instructions = "You are a cart monitoring agent, specifically for fashion items. Only look for carts with fashion items in it. For example: shoes, sunglasses, etc. Carts have other items, but only look for carts with fashion items Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks."
-        self.root_agent = None
-
-    async def init_agent(self):
-
-        # MCP Toolset Configuration
-        mcp_host = os.getenv("MCP_SERVER_HOST", "mcp-server")
-        mcp_port = int(os.getenv("MCP_SERVER_PORT", 8080))
-        mcp_path = os.getenv("MCP_SERVER_PATH", "/sse")
-        full_mcp_sse_url = f"http://{mcp_host}:{mcp_port}{mcp_path}"
-        logger.info(f"Configuring MCPToolset URL: {full_mcp_sse_url}")
-
-        connection_params = SseServerParams(
-            url=full_mcp_sse_url,
-            headers={'Accept': 'text/event-stream'}  # Standard for SSE
-        )
-
-        logger.info(f"Attempting to get tools using MCPToolset.from_server with URL: {full_mcp_sse_url}")
-        tools = await MCPToolset(
-            connection_params=connection_params
-        )
-
-        for tool in tools:
-            logger.info(f'Loaded tools {tool.name}')
-        generate_content_config = genai_types.GenerateContentConfig(
-            temperature=0.0
-        )
-        self.root_agent = Agent(
-            name=self.agent_name,
-            instruction=self.instructions,
-            model='gemini-2.0-flash',
-            disallow_transfer_to_parent=True,
-            disallow_transfer_to_peers=True,
-            generate_content_config=generate_content_config,
-            tools=tools,
-        )
-        # self.runner = AgentRunner()
-
-    async def invoke(self, query, session_id) -> dict:
-        logger.info(f'Running {self.agent_name} for session {session_id}')
-
-        raise NotImplementedError('Please use the streaming function')
-
-    # async def stream(
-    #     self, query, context_id, task_id
-    # ) -> AsyncIterable[Dict[str, Any]]:
-    #     logger.info(
-    #         f'Running {self.agent_name} stream for session {context_id} {task_id} - {query}'
-    #     )
-
-    #     if not query:
-    #         raise ValueError('Query cannot be empty')
-
-    #     if not self.agent:
-    #         await self.init_agent()
-    #     async for chunk in self.runner.run_stream(
-    #         self.agent, query, context_id
-    #     ):
-    #         logger.info(f'Received chunk {chunk}')
-    #         if isinstance(chunk, dict) and chunk.get('type') == 'final_result':
-    #             response = chunk['response']
-    #             yield self.get_agent_response(response)
-    #         else:
-    #             yield {
-    #                 'is_task_complete': False,
-    #                 'require_user_input': False,
-    #                 'content': f'{self.agent_name}: Processing Request...',
-    #             }
-
-    def format_response(self, chunk):
-        patterns = [
-            r'```\n(.*?)\n```',
-            r'```json\s*(.*?)\s*```',
-            r'```tool_outputs\s*(.*?)\s*```',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, chunk, re.DOTALL)
-            if match:
-                content = match.group(1)
-                try:
-                    return json.loads(content)
-                except json.JSONDecodeError:
-                    return content
-        return chunk
-
-    def get_agent_response(self, chunk):
-        logger.info(f'Response Type {type(chunk)}')
-        data = self.format_response(chunk)
-        logger.info(f'Formatted Response {data}')
-        try:
-            if isinstance(data, dict):
-                if 'status' in data and data['status'] == 'input_required':
-                    return {
-                        'response_type': 'text',
-                        'is_task_complete': False,
-                        'require_user_input': True,
-                        'content': data['question'],
-                    }
-                else:
-                    return {
-                        'response_type': 'data',
-                        'is_task_complete': True,
-                        'require_user_input': False,
-                        'content': data,
-                    }
-            else:
-                return_type = 'data'
-                try:
-                    data = json.loads(data)
-                    return_type = 'data'
-                except Exception as json_e:
-                    logger.error(f'Json conversion error {json_e}')
-                    return_type = 'text'
-                return {
-                    'response_type': return_type,
-                    'is_task_complete': True,
-                    'require_user_input': False,
-                    'content': data,
-                }
-        except Exception as e:
-            logger.error(f'Error in get_agent_response: {e}')
-            return {
-                'response_type': 'text',
-                'is_task_complete': True,
-                'require_user_input': False,
-                'content': 'Could not complete task. Please try again.',
-            }
+logger.info(f"Running ADK Agent")
