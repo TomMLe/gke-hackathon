@@ -16,7 +16,7 @@ from google.genai import types as genai_types
 logger = logging.getLogger(__name__)
 
 # MCP Toolset Configuration
-mcp_host = os.getenv("MCP_SERVER_HOST", "mcp-server")
+mcp_host = os.getenv("MCP_SERVER_HOST", "ob-mcp-server")
 mcp_port = int(os.getenv("MCP_SERVER_PORT", 8080))
 mcp_path = os.getenv("MCP_SERVER_PATH", "/sse")
 full_mcp_sse_url = f"http://{mcp_host}:{mcp_port}{mcp_path}"
