@@ -29,7 +29,7 @@ class CartMonitorAgent():
         logger.info(f'Init {self.agent_name}')
 
         self.instructions = "You are a cart monitoring agent, specifically for fashion items. Only look for carts with fashion items in it. For example: shoes, sunglasses, etc. Carts have other items, but only look for carts with fashion items Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks."
-        self.agent = None
+        self.root_agent = None
 
     async def init_agent(self):
 
@@ -55,7 +55,7 @@ class CartMonitorAgent():
         generate_content_config = genai_types.GenerateContentConfig(
             temperature=0.0
         )
-        self.agent = Agent(
+        self.root_agent = Agent(
             name=self.agent_name,
             instruction=self.instructions,
             model='gemini-2.0-flash',
