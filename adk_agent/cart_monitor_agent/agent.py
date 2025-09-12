@@ -2,6 +2,8 @@ import json
 import logging
 import re
 
+import os
+
 from collections.abc import AsyncIterable
 from typing import Any, Dict
 
