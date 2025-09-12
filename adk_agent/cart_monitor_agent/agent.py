@@ -26,7 +26,7 @@ connection_params = SseServerParams(
 )
 
 logger.info(f"Attempting to get tools using MCPToolset.from_server with URL: {full_mcp_sse_url}")
-tools = await MCPToolset(
+tools = MCPToolset(
     connection_params=connection_params
 )
 
