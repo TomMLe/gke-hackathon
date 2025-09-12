@@ -6,7 +6,7 @@ RUN adduser --uid 999 --disabled-password --gecos "" myuser
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ob_mcp.py .
+COPY . .
 
 RUN chown -R myuser:myuser /app
 USER myuser
