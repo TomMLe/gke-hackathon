@@ -6,6 +6,8 @@ import time
 from google.cloud import pubsub_v1
 from mcp.server.fastmcp import FastMCP
 import demo_pb2 as pb
+import grpc
+import demo_pb2_grpc as pb_grpc
 
 
 logging.basicConfig(
@@ -23,6 +25,8 @@ REDIS_ADDRESS = "redis-cart:6379"
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 PUBSUB_TOPIC = "abandoned-carts"
 
+PRODUCT_CATALOG_ADDRESS = os.getenv("PRODUCT_CATALOG_ADDRESS", "productcatalogservice:3550")
+
 # Initialize FastMCP server
 mcp = FastMCP(
     instance_name="online_boutique_mcp_server",
@@ -33,6 +37,9 @@ mcp = FastMCP(
     # message_path="/messages/", # Default, can be overridden if needed
 )
 logging.info(f"Online Boutique MCP server starting on {MCP_SERVER_HOST}:{MCP_SERVER_PORT}")
+
+channel = grpc.insecure_channel(PRODUCT_CATALOG_ADDRESS)
+product_stub = pb_grpc.ProductCatalogServiceStub(channel)
 
 # --- MCP Tools ---
 @mcp.tool()
@@ -75,9 +82,16 @@ def parse_cart_fields(fields):
         try:
             cart = pb.Cart.FromString(fields[b'data'])  # Deserializes binary to Cart object
             for item in cart.items:
+                try:
+                    product = product_stub.GetProduct(pb.GetProductRequest(id=item.product_id))
+                    product_name = product.name
+                except Exception as e:
+                    logger.error(f"Failed to get product name for {item.product_id}: {e}")
+                    product_name = "Unknown"
                 items.append({
                     'product_id': item.product_id,
-                    'quantity': item.quantity
+                    'quantity': item.quantity,
+                    'product_name': product_name
                 })
             logger.info(f"Parsed {len(items)} items from cart data")
         except Exception as e:
