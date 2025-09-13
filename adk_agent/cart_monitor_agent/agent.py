@@ -41,7 +41,7 @@ root_agent = Agent(
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     generate_content_config=generate_content_config,
-    tools=tools
+    tools=[tools]
 )
 
 logger.info(f"ADK Agent '{root_agent.name}' created and configured with OB MCP Toolset. "
