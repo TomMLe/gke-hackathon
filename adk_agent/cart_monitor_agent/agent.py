@@ -1,7 +1,6 @@
 import json
 import logging
 import re
-
 import os
 
 from collections.abc import AsyncIterable
@@ -31,9 +30,6 @@ logger.info(f"Attempting to get tools using MCPToolset.from_server with URL: {fu
 tools = MCPToolset(
     connection_params=connection_params
 )
-
-for tool in tools:
-    logger.info(f'Loaded tools {tool.name}')
 
 generate_content_config = genai_types.GenerateContentConfig(
     temperature=0.0
