@@ -35,7 +35,7 @@ generate_content_config = genai_types.GenerateContentConfig(
     temperature=0.0
 )
 root_agent = Agent(
-    name="Cart Monitoring Agent",
+    name="cart_monitoring_Agent",
     instruction="You are a cart monitoring agent, specifically for fashion items. Only look for carts with fashion items in it. For example: shoes, sunglasses, etc. Carts have other items, but only look for carts with fashion items Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks.",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
@@ -44,4 +44,5 @@ root_agent = Agent(
     tools=tools
 )
 
-logger.info(f"Running ADK Agent")
+logger.info(f"ADK Agent '{root_agent.name}' created and configured with OB MCP Toolset. "
+            f"The toolset will connect to {full_mcp_sse_url} to fetch tool schemas.")
