@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import os
+import google.generativeai as genai
 
 from collections.abc import AsyncIterable
 from typing import Any, Dict
@@ -20,6 +21,10 @@ mcp_port = int(os.getenv("MCP_SERVER_PORT", 8080))
 mcp_path = os.getenv("MCP_SERVER_PATH", "/sse")
 full_mcp_sse_url = f"http://{mcp_host}:{mcp_port}{mcp_path}"
 logger.info(f"Configuring MCPToolset URL: {full_mcp_sse_url}")
+
+# GOOGLE GEMINI API KEY
+api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A")
+genai.configure(api_key=api_key)
 
 connection_params = SseServerParams(
     url=full_mcp_sse_url,

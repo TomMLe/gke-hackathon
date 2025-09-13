@@ -41,8 +41,10 @@ spec:
             value: 'us-west1'
           - name: GOOGLE_GENAI_USE_VERTEXAI
             value: 'False'
+          - name: GOOGLE_API_KEY
+            value: 'AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A'
           - name: MCP_SERVER_HOST
-            value: 'mcp-server'
+            value: 'ob-mcp-server'
           - name: MCP_SERVER_PORT
             value: '8080'
         volumeMounts:
