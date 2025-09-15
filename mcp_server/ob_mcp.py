@@ -41,6 +41,9 @@ logging.info(f"Online Boutique MCP server starting on {MCP_SERVER_HOST}:{MCP_SER
 channel = grpc.insecure_channel(PRODUCT_CATALOG_ADDRESS)
 product_stub = pb_grpc.ProductCatalogServiceStub(channel)
 
+recommend_channel = grpc.insecure_channel("recommendationservice:8080")
+recommend_stub = pb_grpc.RecommendationServiceStub(recommend_channel)
+
 # --- MCP Tools ---
 @mcp.tool()
 def monitor_carts():
@@ -75,6 +78,28 @@ def monitor_carts():
                         logger.error(f"Pub/Sub publish failed for {key_str}: {e}")
 
     return {'abandoned_carts': abandoned}
+
+@mcp.tool()
+def recommend_items(product_ids, user_id=None):
+    """Recommends similar items based on product IDs from an abandoned cart. Returns full details for agent to filter."""
+    try:
+        request = pb.ListRecommendationsRequest(
+            user_id=user_id or "anonymous",
+            product_ids=product_ids
+        )
+        response = recommend_stub.ListRecommendations(request)
+        suggestions = []
+        for pid in response.product_ids:
+            product = product_stub.GetProduct(pb.GetProductRequest(id=pid))
+            suggestions.append({
+                "product_id": pid,
+                "name": product.name,
+                "categories": product.categories
+            })
+        return {"recommendations": suggestions}
+    except Exception as e:
+        logger.error(f"Recommendation failed: {e}")
+        return {"error": str(e)}
 
 def parse_cart_fields(fields):
     items = []
