@@ -1,0 +1,42 @@
+{
+    "name": "Recommend Agent",
+    "description": "Recommends similar fashion items for abandoned carts using MCP tools",
+    "url": "http://recommend-service:10103/",
+    "provider": null,
+    "version": "1.0.0",
+    "documentationUrl": null,
+    "capabilities": {
+        "streaming": "True",
+        "pushNotifications": "True",
+        "stateTransitionHistory": "False"
+    },
+    "authentication": {
+        "credentials": null,
+        "schemes": [
+            "public"
+        ]
+    },
+    "defaultInputModes": [
+        "text",
+        "text/plain"
+    ],
+    "defaultOutputModes": [
+        "text",
+        "text/plain"
+    ],
+    "skills": [
+        {
+            "id": "recommend_items",
+            "name": "Recommend Products",
+            "description": "Suggests similar items based on abandoned cart",
+            "tags": [
+                "Product recommendation"
+            ],
+            "examples": [
+                "Recommend fashion items similar to these product IDs"
+            ],
+            "inputModes": null,
+            "outputModes": null
+        }
+    ]
+}

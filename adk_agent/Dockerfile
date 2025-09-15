@@ -8,10 +8,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 COPY cart_monitor_agent ./cart_monitor_agent
+COPY recommend_agent ./recommend_agent
+COPY orchestrator_agent ./orchestrator_agent
 
 RUN chown -R myuser:myuser /app
 USER myuser
 
 ENV PATH="/home/myuser/.local/bin:$PATH"
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port $PORT"]
+CMD ["sh", "-c", "python -m $AGENT_MODULE --port $PORT"]

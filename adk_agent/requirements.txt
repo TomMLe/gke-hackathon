@@ -3,3 +3,4 @@ fastapi==0.115.12
 pydantic==2.11.5,<3
 litellm==1.68.0
 google-generativeai
+a2a-mcp  # For A2A protocol integration

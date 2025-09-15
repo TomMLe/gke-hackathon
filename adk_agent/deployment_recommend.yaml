@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommend-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommend-agent
+  template:
+    metadata:
+      labels:
+        app: recommend-agent
+    spec:
+      containers:
+      - name: recommend-agent
+        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 1
+          limits:
+            memory: 1Gi
+            cpu: 2
+        ports:
+        - containerPort: 10103
+        env:
+          - name: PORT
+            value: '10103'
+          - name: AGENT_MODULE
+            value: 'recommend_agent'
+          - name: GOOGLE_CLOUD_PROJECT
+            value: 'zippy-entry-470104-d6'
+          - name: GOOGLE_CLOUD_LOCATION
+            value: 'us-west1'
+          - name: GOOGLE_GENAI_USE_VERTEXAI
+            value: 'False'
+          - name: GOOGLE_API_KEY
+            value: 'AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A'
+          - name: MCP_SERVER_HOST
+            value: 'ob-mcp-server'
+          - name: MCP_SERVER_PORT
+            value: '8080'
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: tmp-volume
+        emptyDir:
+          medium: Memory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommend-agent
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10103
+      targetPort: 10103
+  selector:
+    app: recommend-agent
