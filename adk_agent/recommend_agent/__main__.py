@@ -41,7 +41,7 @@ def main(host, port, agent_card):
 
         client = httpx.AsyncClient()
         request_handler = DefaultRequestHandler(
-            agent_executor=AgentExecutor(agent=get_agent(agent_card)),
+            agent_executor=AgentExecutor(),
             task_store=InMemoryTaskStore(),
             push_config_store=InMemoryPushNotificationConfigStore(client),
         )
