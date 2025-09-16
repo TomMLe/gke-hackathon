@@ -1,6 +1,6 @@
 {
     "name": "Recommend Agent",
-    "description": "Recommends similar fashion items for abandoned carts using MCP tools",
+    "description": "Recommends similar items for abandoned carts using MCP tools",
     "url": "http://recommend-service:10103/",
     "provider": null,
     "version": "1.0.0",
@@ -33,7 +33,7 @@
                 "Product recommendation"
             ],
             "examples": [
-                "Recommend fashion items similar to these product IDs"
+                "Recommend items similar to these product IDs"
             ],
             "inputModes": null,
             "outputModes": null

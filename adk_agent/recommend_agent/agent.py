@@ -36,7 +36,7 @@ generate_content_config = genai_types.GenerateContentConfig(
 
 root_agent = Agent(
     name="recommend_agent",
-    instruction="You are a product recommendation agent for fashion items. Given details of an abandoned cart, use the recommend_items tool to suggest similar fashion products.",
+    instruction="You are a product recommendation agent for items. Given details of an abandoned cart, use the recommend_items tool to suggest similar products. Make sure to recommend products of the same categories. For instance, if the abandoned carts's majority numbers of items are fashion items, recommend more fashion items",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,

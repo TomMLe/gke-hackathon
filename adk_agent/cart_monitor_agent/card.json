@@ -1,6 +1,6 @@
 {
     "name": "Cart Monitor Agent",
-    "description": "Monitors for abandoned carts with fashion items using MCP tools",
+    "description": "Monitors for abandoned carts using MCP tools",
     "url": "http://cart-monitor-service:10102/",
     "provider": null,
     "version": "1.0.0",
@@ -28,12 +28,12 @@
         {
             "id": "monitor_carts",
             "name": "Monitor Abandoned Carts",
-            "description": "Detects abandoned carts with fashion items",
+            "description": "Detects abandoned carts",
             "tags": [
                 "Cart monitoring"
             ],
             "examples": [
-                "Check for abandoned fashion carts"
+                "Check for abandoned carts"
             ],
             "inputModes": null,
             "outputModes": null

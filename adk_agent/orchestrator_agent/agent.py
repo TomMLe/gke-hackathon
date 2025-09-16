@@ -36,7 +36,7 @@ generate_content_config = genai_types.GenerateContentConfig(
 
 root_agent = Agent(
     name="orchestrator_agent",
-    instruction="You are an orchestrator agent for abandoned cart handling. Monitor for abandoned fashion carts by delegating to cart_monitor_agent, then suggest recommendations by delegating to recommend_agent. Coordinate the workflow and provide final suggestions.",
+    instruction="You are an orchestrator agent for abandoned cart handling. Monitor for abandoned carts by delegating to cart_monitor_agent, then suggest recommendations by delegating to recommend_agent. Coordinate the workflow and provide final suggestions.",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=False,  # Allow transfer to peer agents

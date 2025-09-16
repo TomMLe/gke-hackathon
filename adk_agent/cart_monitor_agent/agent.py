@@ -41,7 +41,7 @@ generate_content_config = genai_types.GenerateContentConfig(
 )
 root_agent = Agent(
     name="cart_monitoring_Agent",
-    instruction="You are a cart monitoring agent, specifically for fashion items. Only look for carts with fashion items in it. For example: shoes, sunglasses, etc. Carts have other items, but only look for carts with fashion items Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks.",
+    instruction="You are a cart monitoring agent. Use the monitor_carts tool from the cart-watcher MCP to monitor for abandoned carts and handle related tasks.",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
