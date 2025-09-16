@@ -11,7 +11,7 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryPushNotificationConfigStore, InMemoryTaskStore
 from a2a.types import AgentCard
-from a2a_mcp.common.agent_executor import GenericAgentExecutor
+from a2a.server.agent_execution import AgentExecutor
 
 # Import your agent class (assuming it's defined in agent.py as CartMonitorAgent or similar)
 from .agent import root_agent as agent_instance  # Adjust based on your agent.py
@@ -40,7 +40,7 @@ def main(host, port, agent_card):
 
         client = httpx.AsyncClient()
         request_handler = DefaultRequestHandler(
-            agent_executor=GenericAgentExecutor(agent=get_agent(agent_card)),
+            agent_executor=AgentExecutor(agent=get_agent(agent_card)),
             task_store=InMemoryTaskStore(),
             push_config_store=InMemoryPushNotificationConfigStore(client),
         )
