@@ -30,7 +30,7 @@ def get_agent(agent_card: AgentCard):
 @click.command()
 @click.option('--host', 'host', default='0.0.0.0')
 @click.option('--port', 'port', default=10102)
-@click.option('--agent-card', 'agent_card', default='card.json')
+@click.option('--agent-card', 'agent_card', default='cart_monitor_agent/card.json')
 def main(host, port, agent_card):
     """Starts the Cart Monitor Agent as an A2A server."""
     try:
