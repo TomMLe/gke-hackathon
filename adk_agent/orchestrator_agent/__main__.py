@@ -1,12 +1,15 @@
 import logging
 import sys
 import json
+import os
 
 from pathlib import Path
 
 import click
 import httpx
 import uvicorn
+from fastapi import FastAPI
+from google.adk.cli.fast_api import get_fast_api_app
 
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -28,42 +31,51 @@ def get_agent(agent_card: AgentCard):
     except Exception as e:
         raise e
 
+# A2A Setup
+def create_a2a_app(agent_card_path: str):
+    with Path(agent_card_path).open() as file:
+        data = json.load(file)
+    agent_card = AgentCard(**data)
+
+    client = httpx.AsyncClient()
+    request_handler = DefaultRequestHandler(
+        agent_executor=CustomAgentExecutor(agent=get_agent(agent_card)),
+        task_store=InMemoryTaskStore(),
+        push_config_store=InMemoryPushNotificationConfigStore(),
+    )
+
+    return A2AStarletteApplication(
+        agent_card=agent_card, http_handler=request_handler
+    ).build()
+
+# FastAPI with ADK UI
+AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+SESSION_DB_URL = ""
+ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
+SERVE_WEB_INTERFACE = True
+
+app: FastAPI = get_fast_api_app(
+    agents_dir=AGENT_DIR,
+    session_db_url=os.getenv("SESSION_DB_URL", SESSION_DB_URL),
+    allow_origins=ALLOWED_ORIGINS,
+    web=SERVE_WEB_INTERFACE,
+)
+
+# Mount A2A app at /a2a (or root if preferred)
+a2a_app = create_a2a_app('orchestrator_agent/card.json')
+app.mount("/api", a2a_app)  # Mount A2A at /api to avoid UI conflicts
 
 @click.command()
 @click.option('--host', 'host', default='0.0.0.0')
 @click.option('--port', 'port', default=10101)
-@click.option('--agent-card', 'agent_card', default='orchestrator_agent/card.json')
-def main(host, port, agent_card):
-    """Starts the Orchestrator Agent as an A2A server."""
+def main(host, port):
+    """Starts the Orchestrator Agent with ADK UI and A2A server."""
     try:
-        with Path(agent_card).open() as file:
-            data = json.load(file)
-        agent_card = AgentCard(**data)
-
-        client = httpx.AsyncClient()
-        request_handler = DefaultRequestHandler(
-            agent_executor=CustomAgentExecutor(agent=get_agent(agent_card)),
-            task_store=InMemoryTaskStore(),
-            push_config_store=InMemoryPushNotificationConfigStore(),
-        )
-
-        server = A2AStarletteApplication(
-            agent_card=agent_card, http_handler=request_handler
-        )
-
-        logger.info(f'Starting Orchestrator Agent server on {host}:{port}')
-
-        uvicorn.run(server.build(), host=host, port=port)
-    except FileNotFoundError:
-        logger.error(f"Error: File '{agent_card}' not found.")
-        sys.exit(1)
-    except json.JSONDecodeError:
-        logger.error(f"Error: File '{agent_card}' contains invalid JSON.")
-        sys.exit(1)
+        logger.info(f'Starting Orchestrator Agent with ADK UI on {host}:{port}')
+        uvicorn.run(app, host=host, port=port)
     except Exception as e:
         logger.error(f'An error occurred during server startup: {e}')
         sys.exit(1)
-
 
 if __name__ == '__main__':
     main()
