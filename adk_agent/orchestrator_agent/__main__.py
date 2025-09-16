@@ -49,7 +49,7 @@ def create_a2a_app(agent_card_path: str):
     ).build()
 
 # FastAPI with ADK UI
-AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SESSION_DB_URL = ""
 ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
 SERVE_WEB_INTERFACE = True
