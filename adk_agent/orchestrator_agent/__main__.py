@@ -13,7 +13,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryPushNotificationConfigStore, InMemoryTaskStore
 from a2a.types import AgentCard
 from a2a.server.agent_execution import AgentExecutor
-from ..common.agent_executor import CustomAgentExecutor
+from common.agent_executor import CustomAgentExecutor
 
 # Import your agent class (assuming it's defined in agent.py as root_agent)
 from .agent import root_agent as agent_instance  # Adjust based on your agent.py

@@ -10,6 +10,7 @@ COPY main.py .
 COPY cart_monitor_agent ./cart_monitor_agent
 COPY recommend_agent ./recommend_agent
 COPY orchestrator_agent ./orchestrator_agent
+COPY common ./common
 
 RUN chown -R myuser:myuser /app
 USER myuser
