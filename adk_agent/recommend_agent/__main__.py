@@ -44,7 +44,7 @@ def main(host, port, agent_card):
         request_handler = DefaultRequestHandler(
             agent_executor=CustomAgentExecutor(agent=get_agent(agent_card)),
             task_store=InMemoryTaskStore(),
-            push_config_store=InMemoryPushNotificationConfigStore(client),
+            push_config_store=InMemoryPushNotificationConfigStore(),
         )
 
         server = A2AStarletteApplication(
