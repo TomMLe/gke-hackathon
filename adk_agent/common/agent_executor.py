@@ -3,6 +3,9 @@ from typing import Any, Dict
 from a2a.server.agent_execution import AgentExecutor
 
 class CustomAgentExecutor(AgentExecutor):
+    def __init__(self, agent):
+        self.agent = agent
+
     async def execute(self, task: Dict) -> Any:
         # Implement task execution using the agent
         # Assuming the agent has a 'process' method; adjust as needed
