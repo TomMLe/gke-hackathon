@@ -39,8 +39,8 @@ generate_content_config = genai_types.GenerateContentConfig(
 def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     """Delegate a task to a peer agent via A2A HTTP call."""
     peer_urls = {
-        "cart_monitor_agent": "http://cart-monitor-agent:10102/tasks",
-        "recommend_agent": "http://recommend-agent:10103/tasks"
+        "cart_monitor_agent": "http://cart-monitor-agent:10102/",
+        "recommend_agent": "http://recommend-agent:10103/"
     }
     url = peer_urls.get(peer)
     if not url:
