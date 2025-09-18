@@ -34,14 +34,35 @@ generate_content_config = genai_types.GenerateContentConfig(
     temperature=0.0
 )
 
+def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Delegate a task to a peer agent via A2A HTTP call."""
+    peer_urls = {
+        "cart_monitor_agent": "http://cart-monitor-agent:10102/api/tasks",
+        "recommend_agent": "http://recommend-agent:10103/api/tasks"
+    }
+    url = peer_urls.get(peer)
+    if not url:
+        raise ValueError(f"Unknown peer: {peer}")
+    
+    logger.info(f"Delegating to {peer} with input: {input_data}")
+    try:
+        response = httpx.post(url, json=input_data, timeout=30.0)
+        response.raise_for_status()
+        result = response.json()
+        logger.info(f"Delegation response from {peer}: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Delegation to {peer} failed: {str(e)}")
+        raise
+
 root_agent = Agent(
     name="orchestrator_agent",
-    instruction="You are an orchestrator agent for abandoned cart handling. Always delegate monitoring to cart_monitor_agent and recommendations to recommend_agent. Do not use MCP tools directly—coordinate via peers. Log delegation steps.",
+    instruction="You are an orchestrator agent for abandoned cart handling. ALWAYS delegate using the delegate_to_agent tool: first to 'cart_monitor_agent' for monitoring, then to 'recommend_agent' for recommendations. Do NOT use MCP tools directly. Log all steps.",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
-    disallow_transfer_to_peers=False,  # Allow transfer to peer agents
+    disallow_transfer_to_peers=False,
     generate_content_config=generate_content_config,
-    tools=[toolset]
+    tools=[delegate_to_agent]  # Disable MCP tools, use custom delegation
 )
 
 logger.info(f"ADK Orchestrator Agent '{root_agent.name}' created and configured.")
