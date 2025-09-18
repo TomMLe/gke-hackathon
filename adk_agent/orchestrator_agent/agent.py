@@ -49,7 +49,7 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     payload = {
         "jsonrpc": "2.0",
         "method": "message/send",
-        "params": input_data,
+        "params": {"message": input_data or {}},
         "id": "1"
     }
     
@@ -57,7 +57,7 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     try:
         response = httpx.post(url, json=payload, timeout=30.0)
         response.raise_for_status()
-        result = response.json()
+        result = response.json().get('result', {})
         logger.info(f"Delegation response from {peer}: {result}")
         return result
     except Exception as e:
@@ -66,7 +66,7 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 root_agent = Agent(
     name="orchestrator_agent",
-    instruction="You are an orchestrator agent for abandoned cart handling. ALWAYS delegate using the delegate_to_agent tool: first to 'cart_monitor_agent' for monitoring, then to 'recommend_agent' for recommendations. Do NOT use MCP tools directly. Log all steps.",
+    instruction="You are an orchestrator agent for abandoned cart handling. ALWAYS delegate using the delegate_to_agent tool: first to 'cart_monitor_agent' (no input_data needed) to get abandoned carts, then use its output (abandoned_carts with user_id and items) to delegate to 'recommend_agent' with dynamic input_data like {'user_id': user_id, 'product_ids': [ids from items]}. Chain calls and log steps.",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=False,
