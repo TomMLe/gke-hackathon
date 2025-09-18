@@ -36,7 +36,7 @@ generate_content_config = genai_types.GenerateContentConfig(
     temperature=0.0
 )
 
-def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
+def delegate_to_agent(peer: str) -> Dict[str, Any]:
     """Delegate a task to a peer agent via A2A HTTP call."""
     peer_urls = {
         "cart_monitor_agent": "http://cart-monitor-agent:10102/",
@@ -48,8 +48,8 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     payload = {
         "jsonrpc": "2.0",
-        "method": "tasks/send",
-        "params": input_data,
+        "method": "message/send",
+        "params": {},
         "id": "1"
     }
     
