@@ -46,9 +46,16 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     if not url:
         raise ValueError(f"Unknown peer: {peer}")
     
-    logger.info(f"Delegating to {peer} with input: {input_data}")
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "tasks/send",
+        "params": input_data,
+        "id": "1"
+    }
+    
+    logger.info(f"Delegating to {peer} with payload: {payload}")
     try:
-        response = httpx.post(url, json=input_data, timeout=30.0)
+        response = httpx.post(url, json=payload, timeout=30.0)
         response.raise_for_status()
         result = response.json()
         logger.info(f"Delegation response from {peer}: {result}")
