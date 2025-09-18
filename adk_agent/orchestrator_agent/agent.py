@@ -6,6 +6,7 @@ from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, SseServerParams
 from google.genai import types as genai_types
 import google.generativeai as genai
 from typing import Dict, Any
+import httpx
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 logger = logging.getLogger(__name__)
