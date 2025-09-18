@@ -33,6 +33,7 @@ def get_agent(agent_card: AgentCard):
 
 # A2A Setup
 def create_a2a_app(agent_card_path: str):
+    logger.info("Creating A2A app with agent card: %s", agent_card_path)
     with Path(agent_card_path).open() as file:
         data = json.load(file)
     agent_card = AgentCard(**data)
@@ -43,10 +44,13 @@ def create_a2a_app(agent_card_path: str):
         task_store=InMemoryTaskStore(),
         push_config_store=InMemoryPushNotificationConfigStore(),
     )
+    logger.info("Request handler created for agent: %s", agent_card.name)
 
-    return A2AStarletteApplication(
+    app = A2AStarletteApplication(
         agent_card=agent_card, http_handler=request_handler
     ).build()
+    logger.info("A2AStarletteApplication built")
+    return app
 
 # FastAPI with ADK UI
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -72,7 +76,7 @@ def main(host, port):
     """Starts the Orchestrator Agent with ADK UI and A2A server."""
     try:
         logger.info(f'Starting Orchestrator Agent with ADK UI on {host}:{port}')
-        uvicorn.run(app, host=host, port=port)
+        uvicorn.run(app, host=host, port=port, log_level='debug')
     except Exception as e:
         logger.error(f'An error occurred during server startup: {e}')
         sys.exit(1)
