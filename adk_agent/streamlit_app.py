@@ -6,6 +6,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from a2a.types import AgentCard
+import os
 from cart_monitor_agent.agent import get_agent_card as cart_monitor_agent_card
 from recommend_agent.agent import get_agent_card as recommend_agent_card
 
