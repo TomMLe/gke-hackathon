@@ -9,6 +9,7 @@ from typing import Dict, Any
 import httpx
 import time
 import json
+import uuid
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 logger = logging.getLogger(__name__)
@@ -60,16 +61,21 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
             text = input_data.get("text") or input_data.get("prompt")
         if not text:
             if peer == "cart_monitor_agent":
-                text = "monitor for abandoned carts with fashion items"
+                text = ""
             else:
-                # For other peers (e.g., recommend_agent), embed the structured input for clarity
-                text = f"{input_data}" if input_data else "proceed"
+                # For other peers (e.g., recommend_agent), pass structured JSON as text so the agent can parse it
+                text = json.dumps(input_data) if input_data else "proceed"
         message_obj = {"role": "user", "parts": [{"text": str(text)}]}
+    # Ensure required messageId for A2A JSON-RPC
+    if isinstance(message_obj, dict) and "messageId" not in message_obj:
+        message_obj["messageId"] = str(uuid.uuid4())
+    # Attach a sessionId and unique request id to satisfy A2A schema expectations
+    session_id = os.getenv("A2A_SESSION_ID") or str(uuid.uuid4())
     payload = {
         "jsonrpc": "2.0",
         "method": "message/send",
-        "params": {"message": message_obj},
-        "id": "1"
+        "params": {"message": message_obj, "sessionId": session_id},
+        "id": str(uuid.uuid4())
     }
     
     # Default ADK JSON-RPC message path; for cart_monitor_agent we will poll task state after sending.
