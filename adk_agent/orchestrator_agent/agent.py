@@ -7,6 +7,7 @@ from google.genai import types as genai_types
 import google.generativeai as genai
 from typing import Dict, Any
 import httpx
+import time
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 logger = logging.getLogger(__name__)
@@ -46,19 +47,70 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     if not url:
         raise ValueError(f"Unknown peer: {peer}")
     
+    # Build ADK message schema for A2A 'message/send'
+    message_obj = None
+    if isinstance(input_data, dict) and input_data.get("message"):
+        # Already in ADK message format
+        message_obj = input_data["message"]
+    else:
+        # Derive a reasonable user message from input_data or defaults
+        text = None
+        if isinstance(input_data, dict):
+            text = input_data.get("text") or input_data.get("prompt")
+        if not text:
+            if peer == "cart_monitor_agent":
+                text = "monitor for abandoned carts with fashion items"
+            else:
+                # For other peers (e.g., recommend_agent), embed the structured input for clarity
+                text = f"{input_data}" if input_data else "proceed"
+        message_obj = {"role": "user", "parts": [{"text": str(text)}]}
     payload = {
         "jsonrpc": "2.0",
-        "method": "message/stream",
-        "params": {"message": input_data or {}},
+        "method": "message/send",
+        "params": {"message": message_obj},
         "id": "1"
     }
     
-    logger.info(f"Delegating to {peer} with payload: {payload}")
+    # Default ADK JSON-RPC message path; for cart_monitor_agent we will poll task state after sending.
+    full_url = url
+    body = payload
+
+    logger.info(f"Delegating to {peer} endpoint {full_url} with body: {body}")
     try:
-        response = httpx.post(url, json=payload, timeout=30.0)
+        # 1) Kick off work via JSON-RPC message/send (returns ACK)
+        response = httpx.post(full_url, json=body, timeout=30.0)
         response.raise_for_status()
-        result = response.json().get('result', {})
-        logger.info(f"Delegation response from {peer}: {result}")
+        ack_json = response.json()
+        logger.info(f"A2A ACK from {peer}: {ack_json}")
+
+        # 2) For cart_monitor_agent, poll for last artifact via a lightweight endpoint exposed by the agent.
+        if peer == "cart_monitor_agent":
+            tasks_url = url.rstrip("/") + "/tasks/last"
+            logger.info(f"Polling for last artifact at {tasks_url}")
+            deadline = time.time() + 30.0  # 30s overall timeout
+            last_non_empty = None
+            while time.time() < deadline:
+                try:
+                    r = httpx.get(tasks_url, timeout=5.0)
+                    r.raise_for_status()
+                    j = r.json()
+                    if j:
+                        last_non_empty = j
+                        res = j.get("result") or j
+                        # Prefer an abandoned_carts payload if available
+                        if isinstance(res, dict) and ("abandoned_carts" in res):
+                            return res
+                    time.sleep(0.5)
+                except Exception as pe:
+                    logger.debug(f"Poll attempt failed: {pe}")
+                    time.sleep(0.5)
+            # Timeout: return best-effort non-empty payload or the initial ACK
+            if last_non_empty:
+                return last_non_empty.get("result") or last_non_empty
+            return ack_json
+
+        # 3) Other peers: return the ACK or result if present
+        result = ack_json.get("result", {}) or ack_json
         return result
     except Exception as e:
         logger.error(f"Delegation to {peer} failed: {str(e)}")

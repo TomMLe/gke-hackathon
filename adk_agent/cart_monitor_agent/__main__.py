@@ -53,7 +53,35 @@ def main(host, port, agent_card):
 
         logger.info(f'Starting Cart Monitor Agent server on {host}:{port}')
 
-        uvicorn.run(server.build(), host=host, port=port)
+        # Build Starlette app and add a lightweight endpoint to fetch the latest artifact from the in-memory task store.
+        app = server.build()
+
+        from starlette.responses import JSONResponse
+
+        async def tasks_last(request):
+            try:
+                task_store = request_handler.task_store
+                tasks = list(getattr(task_store, "_tasks", {}).values())
+                if tasks:
+                    last = tasks[-1]
+                    artifacts = getattr(last, "artifacts", None) or (last.get("artifacts") if isinstance(last, dict) else None)
+                    if artifacts:
+                        last_art = artifacts[-1]
+                        payload = last_art.get("payload") if isinstance(last_art, dict) else None
+                        if payload:
+                            return JSONResponse({"result": payload})
+                return JSONResponse({})
+            except Exception as e:
+                logger.exception("tasks_last failed")
+                return JSONResponse({"error": str(e)}, status_code=500)
+
+        try:
+            app.add_route("/tasks/last", tasks_last, methods=["GET"])
+            logger.info("Registered /tasks/last endpoint for retrieving latest artifact.")
+        except Exception as e:
+            logger.error(f"Failed adding route /tasks/last: {e}")
+
+        uvicorn.run(app, host=host, port=port)
     except FileNotFoundError:
         logger.error(f"Error: File '{agent_card}' not found.")
         sys.exit(1)
