@@ -6,8 +6,8 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from a2a.types import AgentCard
-from cart_monitor_agent import get_agent_card as cart_monitor_agent_card
-from recommend_agent import get_agent_card as recommend_agent_card
+from cart_monitor_agent.agent import get_agent_card as cart_monitor_agent_card
+from recommend_agent.agent import get_agent_card as recommend_agent_card
 
 # GOOGLE GEMINI API KEY
 api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A")
