@@ -8,6 +8,7 @@ import google.generativeai as genai
 from typing import Dict, Any
 import httpx
 import time
+import json
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 logger = logging.getLogger(__name__)
@@ -83,31 +84,9 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
         ack_json = response.json()
         logger.info(f"A2A ACK from {peer}: {ack_json}")
 
-        # 2) For cart_monitor_agent, poll for last artifact via a lightweight endpoint exposed by the agent.
+        # 2) For cart_monitor_agent, simply return the ACK payload. The service already responds synchronously.
         if peer == "cart_monitor_agent":
-            tasks_url = url.rstrip("/") + "/tasks/last"
-            logger.info(f"Polling for last artifact at {tasks_url}")
-            deadline = time.time() + 30.0  # 30s overall timeout
-            last_non_empty = None
-            while time.time() < deadline:
-                try:
-                    r = httpx.get(tasks_url, timeout=5.0)
-                    r.raise_for_status()
-                    j = r.json()
-                    if j:
-                        last_non_empty = j
-                        res = j.get("result") or j
-                        # Prefer an abandoned_carts payload if available
-                        if isinstance(res, dict) and ("abandoned_carts" in res):
-                            return res
-                    time.sleep(0.5)
-                except Exception as pe:
-                    logger.debug(f"Poll attempt failed: {pe}")
-                    time.sleep(0.5)
-            # Timeout: return best-effort non-empty payload or the initial ACK
-            if last_non_empty:
-                return last_non_empty.get("result") or last_non_empty
-            return ack_json
+            return ack_json.get("result") or ack_json
 
         # 3) Other peers: return the ACK or result if present
         result = ack_json.get("result", {}) or ack_json
