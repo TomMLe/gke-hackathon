@@ -5,7 +5,7 @@ from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, SseServerParams
 from google.genai import types as genai_types
 import google.generativeai as genai
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import httpx
 import time
 import json
@@ -39,8 +39,10 @@ generate_content_config = genai_types.GenerateContentConfig(
     temperature=0.0
 )
 
-def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
+def delegate_to_agent(peer: str, input_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Delegate a task to a peer agent via A2A HTTP call."""
+    if input_data is None:
+        input_data = {}
     peer_urls = {
         "cart_monitor_agent": "http://cart-monitor-agent:10102/",
         "recommend_agent": "http://recommend-agent:10103/"
@@ -59,12 +61,12 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
         text = None
         if isinstance(input_data, dict):
             text = input_data.get("text") or input_data.get("prompt")
-        if not text:
-            if peer == "cart_monitor_agent":
-                text = ""
-            else:
-                # For other peers (e.g., recommend_agent), pass structured JSON as text so the agent can parse it
-                text = json.dumps(input_data) if input_data else "proceed"
+            if not text:
+                if peer == "cart_monitor_agent":
+                    text = "monitor abandoned carts"
+                else:
+                    # For other peers (e.g., recommend_agent), pass structured JSON as text so the agent can parse it
+                    text = json.dumps(input_data) if input_data else "proceed"
         message_obj = {"role": "user", "parts": [{"text": str(text)}]}
     # Ensure required messageId for A2A JSON-RPC
     if isinstance(message_obj, dict) and "messageId" not in message_obj:
@@ -103,7 +105,7 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 root_agent = Agent(
     name="orchestrator_agent",
-    instruction="You are an orchestrator agent for abandoned cart handling. ALWAYS delegate using the delegate_to_agent tool: first to 'cart_monitor_agent' (no input_data needed) to get abandoned carts, then use its output (abandoned_carts with user_id and items) to delegate to 'recommend_agent' with dynamic input_data like {'user_id': user_id, 'product_ids': [ids from items]}. Chain calls and log steps.",
+    instruction="You are an orchestrator agent for abandoned cart handling. ALWAYS delegate using the delegate_to_agent tool: first to 'cart_monitor_agent' to get abandoned carts. When delegating to 'cart_monitor_agent', include the end-user request text in input_data.text so the agent can curate results accordingly (e.g., 'monitor abandoned carts with fashion items'). Then use its output (abandoned_carts with user_id and items) to delegate to 'recommend_agent' with dynamic input_data like {'user_id': user_id, 'product_ids': [ids from items]}. Chain calls and log steps.",
     model='gemini-2.0-flash',
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=False,
