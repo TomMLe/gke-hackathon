@@ -1,6 +1,7 @@
 import asyncio
 import streamlit as st
-from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI, genai
 from langchain.memory import ConversationBufferMemory
 from langgraph.prebuilt import create_react_agent
 from langchain_core.output_parsers import StrOutputParser
