@@ -15,6 +15,9 @@ spec:
       containers:
       - name: adk-agent
         image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
+        command: ["python", "main.py"]
+        stdin: true
+        tty: true
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -33,20 +36,14 @@ spec:
         ports:
         - containerPort: 8080
         env:
-          - name: PORT
-            value: '8080'
-          - name: GOOGLE_CLOUD_PROJECT
-            value: 'zippy-entry-470104-d6'
-          - name: GOOGLE_CLOUD_LOCATION
-            value: 'us-west1'
-          - name: GOOGLE_GENAI_USE_VERTEXAI
-            value: 'False'
           - name: GOOGLE_API_KEY
             value: 'AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A'
-          - name: MCP_SERVER_HOST
-            value: 'ob-mcp-server'
-          - name: MCP_SERVER_PORT
-            value: '8080'
+          - name: PYTHONDONTWRITEBYTECODE
+            value: '1'
+          - name: PYTHONUNBUFFERED
+            value: '1'
+          - name: LOG_LEVEL
+            value: 'INFO'
         volumeMounts:
         - name: tmp-volume
           mountPath: /tmp

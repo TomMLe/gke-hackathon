@@ -11,9 +11,37 @@ from typing import Any, Dict
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, SseServerParams
 from google.genai import types as genai_types
+from a2a.types import AgentCard, AgentSkill, AgentCapabilities
 
 
 logger = logging.getLogger(__name__)
+
+def get_agent_card() -> AgentCard:
+    capabilities = AgentCapabilities(streaming=False, pushNotifications=False)
+    return AgentCard(
+        id="cart_monitor_agent",
+        name="Cart Monitor Agent",
+        description="Detects abandoned carts",
+        version="1.0.0",
+        url="local",  # or use dummy string if running locally
+        capabilities=capabilities,
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
+        skills=[
+            AgentSkill(
+                id="monitor_carts",
+                name= "Monitor Abandoned Carts",
+                description="Detects abandoned carts",
+                tags=[
+                    "Cart monitoring"
+                ],
+                examples=[
+                    "Check for abandoned carts with home decor items",
+                    "Monitor abandoned carts with fashion items"
+                ],
+            )
+        ]
+    )
 
 # MCP Toolset Configuration
 mcp_host = os.getenv("MCP_SERVER_HOST", "ob-mcp-server")

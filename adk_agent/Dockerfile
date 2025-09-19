@@ -17,4 +17,4 @@ USER myuser
 
 ENV PATH="/home/myuser/.local/bin:$PATH"
 
-CMD ["sh", "-c", "python -m $AGENT_MODULE --port $PORT"]
+CMD ["streamlit", "run", "--server.port=8080", "streamlit_app.py"]

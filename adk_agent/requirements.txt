@@ -5,3 +5,9 @@ litellm==1.68.0
 google-generativeai
 a2a-mcp  # For A2A protocol integration
 a2a-sdk
+langchain
+langchain-core
+langchain-community
+langgraph
+langchain-google-genai
+streamlit

@@ -5,9 +5,36 @@ from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, SseServerParams
 from google.genai import types as genai_types
 import google.generativeai as genai
+from a2a.types import AgentCard, AgentSkill, AgentCapabilities
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 logger = logging.getLogger(__name__)
+
+def get_agent_card() -> AgentCard:
+    capabilities = AgentCapabilities(streaming=False, pushNotifications=False)
+    return AgentCard(
+        id="recommend_agent",
+        name="Recommend Agent",
+        description="Recommend item agent",
+        version="1.0.0",
+        url="local",  # or use dummy string if running locally
+        capabilities=capabilities,
+        defaultInputModes=["text"],
+        defaultOutputModes=["text"],
+        skills=[
+            AgentSkill(
+                id="recommend_items",
+                name= "Recommend items",
+                description="uggests similar items based on abandoned cart",
+                tags=[
+                    "Product recommendation"
+                ],
+                examples=[
+                    "Recommend items similar to these product IDs"
+                ],
+            )
+        ]
+    )
 
 # API Key Initialization
 api_key = os.getenv("GOOGLE_API_KEY")
