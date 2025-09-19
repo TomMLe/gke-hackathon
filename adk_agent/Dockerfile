@@ -6,7 +6,7 @@ RUN adduser --uid 1001 --disabled-password --gecos "" myuser
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
+COPY streamlit_app.py .
 COPY cart_monitor_agent ./cart_monitor_agent
 COPY recommend_agent ./recommend_agent
 COPY orchestrator_agent ./orchestrator_agent
