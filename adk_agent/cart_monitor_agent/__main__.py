@@ -13,6 +13,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryPushNotificationConfigStore, InMemoryTaskStore
 from a2a.types import AgentCard
 from a2a.server.agent_execution import AgentExecutor
+from common.agent_executor import CustomAgentExecutor
 
 # Import your agent class (assuming it's defined in agent.py as CartMonitorAgent or similar)
 from .agent import root_agent as agent_instance  # Adjust based on your agent.py
@@ -40,7 +41,7 @@ def main(host, port, agent_card):
         agent_card = AgentCard(**data)
 
         request_handler = DefaultRequestHandler(
-            agent_executor=AgentExecutor(agent=get_agent(agent_card)),
+            agent_executor=CustomAgentExecutor(agent=get_agent(agent_card)),
             task_store=InMemoryTaskStore(),
             push_config_store=InMemoryPushNotificationConfigStore(),
         )
