@@ -48,7 +48,7 @@ def delegate_to_agent(peer: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     
     payload = {
         "jsonrpc": "2.0",
-        "method": "message/send",
+        "method": "message/stream",
         "params": {"message": input_data or {}},
         "id": "1"
     }
