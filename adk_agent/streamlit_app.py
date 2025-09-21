@@ -9,6 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from a2a.types import AgentCard
 from langchain_mcp_adapters.tools import load_mcp_tools
+from langchain_mcp_adapters.client import MultiServerMCPClient
 import os
 from cart_monitor_agent.agent import get_agent_card as cart_monitor_agent_card
 from recommend_agent.agent import get_agent_card as recommend_agent_card
@@ -33,6 +34,13 @@ connection_params = SseServerParams(
     url=full_mcp_sse_url,
     headers={'Accept': 'text/event-stream'}
 )
+
+mcp_servers_config = {
+    "ob-mcp-server": {
+        "transport": "sse",
+        "url": full_mcp_sse_url  # Replace with your actual MCP server URL
+    }
+}
 
 # Agent Cards
 agent_cards = {
@@ -72,7 +80,8 @@ async def process_input(user_input):
     agent_label = (await route(user_input)).strip()
 
     agent_card = agent_cards.get(agent_label)
-    tools = await load_mcp_tools(full_mcp_sse_url)
+    client = MultiServerMCPClient(mcp_servers_config)
+    tools = await client.get_tools()
     if not agent_card:
         return f"❌ No agent found for label: {agent_label}"
 

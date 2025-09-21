@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: cart-monitor-agent
-        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
+        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/cart-monitor-agent:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

@@ -15,7 +15,7 @@ spec:
       containers:
       - name: adk-agent
         image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
-        command: ["streamlit", "run", "--server.port=8080", "streamlit_app.py"]
+        command: ["streamlit", "run", "--server.port=8080", "main.py"]
         stdin: true
         tty: true
         securityContext:

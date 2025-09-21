@@ -7,6 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY streamlit_app.py .
+COPY main.py .
 COPY cart_monitor_agent ./cart_monitor_agent
 COPY recommend_agent ./recommend_agent
 COPY orchestrator_agent ./orchestrator_agent
@@ -17,4 +18,4 @@ USER myuser
 
 ENV PATH="/home/myuser/.local/bin:$PATH"
 
-CMD ["streamlit", "run", "--server.port=8080", "streamlit_app.py"]
+CMD ["streamlit", "run", "--server.port=8080", "main.py"]
