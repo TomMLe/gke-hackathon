@@ -8,6 +8,7 @@ from langgraph.prebuilt import create_react_agent
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from a2a.types import AgentCard
+from langchain_mcp_adapters.tools import load_mcp_tools
 import os
 from cart_monitor_agent.agent import get_agent_card as cart_monitor_agent_card
 from recommend_agent.agent import get_agent_card as recommend_agent_card
@@ -32,8 +33,6 @@ connection_params = SseServerParams(
     url=full_mcp_sse_url,
     headers={'Accept': 'text/event-stream'}
 )
-
-tools = MCPToolset(connection_params=connection_params)
 
 # Agent Cards
 agent_cards = {
@@ -73,6 +72,7 @@ async def process_input(user_input):
     agent_label = (await route(user_input)).strip()
 
     agent_card = agent_cards.get(agent_label)
+    tools = await load_mcp_tools(full_mcp_sse_url)
     if not agent_card:
         return f"❌ No agent found for label: {agent_label}"
 
