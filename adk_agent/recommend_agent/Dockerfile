@@ -16,4 +16,4 @@ COPY --chown=appuser:appuser agent.py .
 
 ENV PATH="/home/appuser/.local/bin:${PATH}"
 EXPOSE 10102
-CMD ["uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "10102"]
+CMD ["uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "10103"]

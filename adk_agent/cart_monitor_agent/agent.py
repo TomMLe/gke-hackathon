@@ -65,11 +65,18 @@ import asyncio
 from google.adk.agents import LlmAgent
 from google.adk import Runner
 from google.adk.sessions import InMemorySessionService
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, SseServerParams
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
 from google.genai import types as genai_types
 
 # Your AgentCard (should already exist)
 from a2a.types import AgentCard, AgentSkill, AgentCapabilities
+
+from typing import Iterable, AsyncIterable
+import logging
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+logger = logging.getLogger(__name__)
 
 def get_agent_card() -> AgentCard:
     capabilities = AgentCapabilities(streaming=False, pushNotifications=False)
@@ -111,6 +118,18 @@ class A2AResponse(BaseModel):
     messages: List[A2AMessage]
     output: str
 
+def _latest_user_text(messages: list[A2AMessage]) -> str:
+    for m in reversed(messages or []):
+        if (m.role or "user").lower() in ("user", "human"):
+            return m.content
+    return (messages[-1].content if messages else "").strip()
+
+def _content_from_text(text: str) -> genai_types.Content:
+    return genai_types.Content(
+        role="user",
+        parts=[genai_types.Part.from_text(text=text)]  # keyword arg is required
+    )
+
 MODEL_ID = os.getenv("CART_MONITOR_AGENT_MODEL", "gemini-2.0-flash")
 MCP_HOST = os.getenv("MCP_SERVER_HOST", "ob-mcp-server")
 MCP_PORT = int(os.getenv("MCP_SERVER_PORT", "8080"))
@@ -128,17 +147,21 @@ async def _ensure_runner() -> Runner:
     if _runner:
         return _runner
 
-    base_toolset = MCPToolset(connection_params=SseServerParams(url=MCP_SSE_URL))
+    connection_params = SseConnectionParams(
+        url=MCP_SSE_URL,
+        headers={'Accept': 'text/event-stream'}
+    )
 
-    async def filtered_tools(readonly_context=None):
-        tools = await base_toolset.get_tools(readonly_context)
-        return [t for t in tools if getattr(t, "name", "").startswith("cart_")]
+    base_toolset = MCPToolset(connection_params=connection_params)
 
-    class FilteredMcpToolset(MCPToolset):
-        async def get_tools(self, readonly_context=None):
-            return await filtered_tools(readonly_context)
-
-    toolset_for_agent = FilteredMcpToolset(connection_params=SseServerParams(url=MCP_SSE_URL))
+    # DEBUG: show discovered tools
+    try:
+        tools = await base_toolset.get_tools()
+        names = [getattr(t, "name", "?") for t in tools]
+        logger.info("MCP tools (%d): %s", len(names), names)
+    except Exception:
+        logger.exception("get_tools() failed")
+        tools = []
 
     agent = LlmAgent(
         name="cart_monitor_agent",
@@ -147,46 +170,210 @@ async def _ensure_runner() -> Runner:
         instruction=(
             "You are cart_monitor_agent. "
             f"{agent_card.description}\n"
-            "Monitor carts, detect anomalies, trigger alerts, and propose interventions."
+            "Monitor abandoned carts with certain category of items. ALWAYS Use the MCP tools given to you"
+            "Format your answer as concise Markdown. Use bullet lists for items; if you return structured data, wrap valid JSON in ```json code fences."
         ),
-        tools=[toolset_for_agent],
+        tools=tools,
     )
 
-    _runner = runner.Runner(app_name="cart_monitor_agent", agent=agent, session_service=session_service)
+    _runner = Runner(app_name="cart_monitor_agent", agent=agent, session_service=session_service)
+    # Ensure the default session exists (works with sync OR async session services)
+    await session_service.create_session(
+        app_name="cart_monitor_agent",
+        user_id="host_orchestrator",
+        session_id="cart_monitor_agent_session",
+    )
     return _runner
 
 def _map_a2a_msgs_to_content(messages: List[A2AMessage]) -> genai_types.Content:
-    parts: List[genai_types.Part] = []
+    # Flatten the conversation into a single user message
+    lines = []
     for m in messages:
-        prefix = "SYSTEM: " if m.role == "system" else ""
-        parts.append(genai_types.Part.from_text(f"{prefix}{m.content}"))
-    return genai_types.Content(parts=parts)
+        r = (m.role or "user").lower()
+        if r == "system":
+            lines.append(f"[SYSTEM] {m.content}")
+        elif r in ("assistant", "ai"):
+            lines.append(f"Assistant: {m.content}")
+        else:
+            lines.append(m.content)
+    text = "\n".join(lines).strip()
+    return genai_types.Content(
+        role="user",
+        parts=[genai_types.Part.from_text(text=text)]  # ✅ keyword arg, single Part
+    )
+
+def _debug_event(evt):
+    et = getattr(evt, "type", "")
+    tn = getattr(evt, "tool_name", None)
+    if et.startswith("tool") or tn:
+        logger.info("EVENT %s tool=%s", et, tn)
+
+def _take_text_from_event(evt) -> str:
+    # 1) common direct fields
+    for attr in ("output_text", "text"):
+        val = getattr(evt, attr, None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+
+    # 2) common containers
+    for container_attr in ("output", "message", "response", "content"):  # <— added "content"
+        out = getattr(evt, container_attr, None)
+        if not out:
+            continue
+
+        # 2a) direct .text on the container
+        val = getattr(out, "text", None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+
+        # 2b) parts on the container
+        parts = getattr(out, "parts", None)
+        if parts:
+            try:
+                txt = "".join((getattr(p, "text", "") or "") for p in parts if hasattr(p, "text"))
+                if txt.strip():
+                    return txt.strip()
+            except Exception:
+                pass
+
+        # 2c) gemini-style candidates -> content.parts
+        candidates = getattr(out, "candidates", None)
+        if candidates:
+            for c in candidates:
+                content = getattr(c, "content", None)
+                if content and getattr(content, "parts", None):
+                    try:
+                        txt = "".join((getattr(p, "text", "") or "") for p in content.parts if hasattr(p, "text"))
+                        if txt.strip():
+                            return txt.strip()
+                    except Exception:
+                        pass
+
+    # 3) last resort: nothing
+    return ""
+
+    # 1) direct strings commonly present on events
+    for attr in ("output_text", "text"):
+        val = getattr(evt, attr, None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+
+    # 2) common containers on events
+    for container_attr in ("output", "message", "response"):
+        out = getattr(evt, container_attr, None)
+        if not out:
+            continue
+
+        # 2a) direct .text on the container
+        val = getattr(out, "text", None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+
+        # 2b) parts on the container
+        parts = getattr(out, "parts", None)
+        if parts:
+            try:
+                txt = "".join((getattr(p, "text", "") or "") for p in parts)
+                if txt.strip():
+                    return txt.strip()
+            except Exception:
+                pass
+
+        # 2c) Gemini-style candidates -> content.parts
+        candidates = getattr(out, "candidates", None)
+        if candidates:
+            for c in candidates:
+                content = getattr(c, "content", None)
+                if content and getattr(content, "parts", None):
+                    try:
+                        txt = "".join((getattr(p, "text", "") or "") for p in content.parts)
+                        if txt.strip():
+                            return txt.strip()
+                    except Exception:
+                        pass
+
+    # 3) as a last resort, stringify
+    try:
+        s = str(evt)
+        if s and s != repr(evt):
+            return s
+    except Exception:
+        pass
+    return ""
+
+
 
 @app.post("/a2a", response_model=A2AResponse)
 async def a2a_endpoint(payload: A2ARequest):
     r = await _ensure_runner()
-    content = _map_a2a_msgs_to_content(payload.messages)
 
-    final_text: Optional[str] = None
-    async for event in r.run(
-        user_id="host_orchestrator",
-        session_id="cart_monitor_agent_session",
-        request=content,
-    ):
-        if event.type == "agent_output":
-            try:
-                final_text = "".join(
-                    (p.text or "") for p in (event.output.parts or []) if hasattr(p, "text")
-                ).strip() or final_text
-            except Exception:
-                pass
+    # 1) send only the latest user turn (keeps models/tooling decisive)
+    user_text = _latest_user_text(payload.messages).strip()
+    content = _content_from_text(user_text or "Please proceed.")
 
-    if not final_text:
-        final_text = "⚠️ cart_monitor_agent produced no text."
+    # 2) run the agent (handle both async-iterable and sync generators)
+    try:
+        events = getattr(r, "run_async", None)
+        if callable(events):
+            events = r.run_async(
+                user_id="host_orchestrator",
+                session_id="cart_monitor_agent_session",  # or recommend_agent_session
+                new_message=content,
+            )
+        else:
+            events = r.run(
+                user_id="host_orchestrator",
+                session_id="cart_monitor_agent_session",
+                new_message=content,
+            )
+    except TypeError:
+        # Some ADK builds use 'request' instead of 'new_message'
+        run_fn = getattr(r, "run_async", None) or r.run
+        events = run_fn(
+            user_id="host_orchestrator",
+            session_id="cart_monitor_agent_session",
+            request=content,
+        )
+
+    chunks: list[str] = []
+    final_text: str | None = None
+
+    async def _consume_async(ait: AsyncIterable):
+        nonlocal final_text
+        async for evt in ait:
+            _debug_event(evt)
+            text = _take_text_from_event(evt)
+            if text:
+                if getattr(evt, "type", "") in ("agent_text_delta", "assistant_text_delta", "text_delta"):
+                    chunks.append(text)
+                else:
+                    final_text = text
+
+    def _consume_sync(it: Iterable):
+        nonlocal final_text
+        for evt in it:
+            _debug_event(evt)
+            text = _take_text_from_event(evt)
+            if text:
+                if getattr(evt, "type", "") in ("agent_text_delta", "assistant_text_delta", "text_delta"):
+                    chunks.append(text)
+                else:
+                    final_text = text
+
+    if hasattr(events, "__aiter__"):
+        await _consume_async(events)
+    else:
+        _consume_sync(events)
+
+    # 3) prefer final output; otherwise join deltas
+    answer = (final_text or "".join(chunks)).strip()
+
+    if not answer:
+        answer = "⚠️ No text produced. Check ADK events and tool availability."
 
     return A2AResponse(
-        messages=[A2AMessage(role="assistant", content=final_text)],
-        output=final_text
+        messages=[A2AMessage(role="assistant", content=answer)],
+        output=answer,
     )
 
 if __name__ == "__main__":

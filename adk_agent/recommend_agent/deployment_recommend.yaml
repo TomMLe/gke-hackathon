@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: recommend-agent
-        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
+        image: us-west1-docker.pkg.dev/<PROJECT_ID>/gke-hackathon/recommend-agent:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -38,13 +38,13 @@ spec:
           - name: AGENT_MODULE
             value: 'recommend_agent'
           - name: GOOGLE_CLOUD_PROJECT
-            value: 'zippy-entry-470104-d6'
+            value: <PROJECT_ID>
           - name: GOOGLE_CLOUD_LOCATION
             value: 'us-west1'
           - name: GOOGLE_GENAI_USE_VERTEXAI
             value: 'False'
           - name: GOOGLE_API_KEY
-            value: 'AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A'
+            value: <PROJECT_ID>
           - name: MCP_SERVER_HOST
             value: 'ob-mcp-server'
           - name: MCP_SERVER_PORT

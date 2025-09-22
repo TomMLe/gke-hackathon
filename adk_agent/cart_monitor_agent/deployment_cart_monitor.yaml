@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: orchestrator-agent
+  name: cart-monitor-agent
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: orchestrator-agent
+      app: cart-monitor-agent
   template:
     metadata:
       labels:
-        app: orchestrator-agent
+        app: cart-monitor-agent
     spec:
       containers:
-      - name: orchestrator-agent
-        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
+      - name: cart-monitor-agent
+        image: us-west1-docker.pkg.dev/<PROJECT_ID>/gke-hackathon/cart-monitor-agent:latest
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -31,20 +31,20 @@ spec:
             memory: 1Gi
             cpu: 2
         ports:
-        - containerPort: 10101
+        - containerPort: 10102
         env:
           - name: PORT
-            value: '10101'
+            value: '10102'
           - name: AGENT_MODULE
-            value: 'orchestrator_agent'
+            value: 'cart_monitor_agent'
           - name: GOOGLE_CLOUD_PROJECT
-            value: 'zippy-entry-470104-d6'
+            value: <PROJECT_ID>
           - name: GOOGLE_CLOUD_LOCATION
             value: 'us-west1'
           - name: GOOGLE_GENAI_USE_VERTEXAI
             value: 'False'
           - name: GOOGLE_API_KEY
-            value: 'AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A'
+            value: <GOOGLE_API_KEY>
           - name: MCP_SERVER_HOST
             value: 'ob-mcp-server'
           - name: MCP_SERVER_PORT
@@ -60,11 +60,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: orchestrator-agent
+  name: cart-monitor-agent
 spec:
   type: ClusterIP
   ports:
-    - port: 10101
-      targetPort: 10101
+    - port: 10102
+      targetPort: 10102
   selector:
-    app: orchestrator-agent
+    app: cart-monitor-agent

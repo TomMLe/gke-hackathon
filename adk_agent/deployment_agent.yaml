@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: adk-agent
-        image: us-west1-docker.pkg.dev/zippy-entry-470104-d6/gke-hackathon/adk-agent:latest
+        image: us-west1-docker.pkg.dev/<PROJECT_ID>/gke-hackathon/adk-agent:latest
         command: ["streamlit", "run", "--server.port=8080", "main.py"]
         stdin: true
         tty: true
@@ -37,7 +37,7 @@ spec:
         - containerPort: 8080
         env:
           - name: GOOGLE_API_KEY
-            value: 'AIzaSyCv39vGzFZUHrida4TM9xV5RKN33zEVZ8A'
+            value: <GOOGLE_API_KEY>
           - name: PYTHONDONTWRITEBYTECODE
             value: '1'
           - name: PYTHONUNBUFFERED
@@ -59,7 +59,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
   selector:
     app: adk-agent
+

@@ -41,10 +41,10 @@ router_prompt = ChatPromptTemplate.from_messages([
      "You are an intelligent router. Choose the most suitable agent for this request from the following:\n\n"
      "{agent_cards}\n\n"
      "Only return the agent name from this list: {agent_labels}"
-     "Examples: User: Convert 10 USD to EUR → converter_agent ; "
-     "User: What time is it in India? → converter_agent; "
-     "User: Generate job description for a backend engineer → generator_agent; "
-     "User: Write an email to a recruiter → generator_agent"),
+     "Examples: User: Monitor abandoned carts with home decor items → cart_monitor_agent ; "
+     "User: Recommend items with product ID ABCDEF → recommend_agent; "
+     "User: monitor abandoned carts with fashion items, then recommend other fashion items based on the items on the carts → cart_monitor_agent → recommend_agent"
+    ),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{user_input}")
 ])
